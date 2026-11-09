@@ -1,6 +1,7 @@
 import { DesignGrid } from "@/components/public/design-grid"
 import { getRelatedDesigns } from "@/lib/db/queries/designs"
 import { getStorageProvider } from "@/lib/storage"
+import { toDesignCardData } from "@/lib/presenters/design-card"
 
 interface Props {
   categoryId: string
@@ -13,17 +14,7 @@ export async function RelatedDesigns({ categoryId, excludeSlug, categoryName }: 
   if (raw.length === 0) return null
 
   const storage = getStorageProvider()
-  const designs = raw.map((d) => ({
-    slug: d.slug,
-    name: d.name,
-    categoryName: d.category.name,
-    categorySlug: d.category.slug,
-    thumbnailUrl: d.images[0]?.thumbnailKey
-      ? storage.getPublicUrl(d.images[0].thumbnailKey)
-      : d.images[0]?.storageKey
-        ? storage.getPublicUrl(d.images[0].storageKey)
-        : null,
-  }))
+  const designs = raw.map((d) => toDesignCardData(d, storage))
 
   return (
     <section className="border-t border-border pt-12">

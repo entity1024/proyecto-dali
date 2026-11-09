@@ -3,8 +3,10 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { getPublishedDesigns } from "@/lib/db/queries/designs"
-import { getCategories } from "@/lib/db/queries/categories"
+import { getPublicCategories } from "@/lib/db/queries/categories"
 import { getStorageProvider } from "@/lib/storage"
+import { toDesignCardData } from "@/lib/presenters/design-card"
+import { catalogSearchParamsSchema } from "@/lib/validations/catalog"
 import { DesignGrid } from "@/components/public/design-grid"
 import { CategoryBar } from "@/components/public/category-bar"
 import { SearchBar } from "@/components/public/search-bar"
@@ -21,32 +23,21 @@ interface PageProps {
 }
 
 export default async function CatalogoPage({ searchParams }: PageProps) {
-  const { categoria, q, pagina } = await searchParams
-  const page = Math.max(1, parseInt(pagina ?? "1", 10))
+  const { categoria, q, pagina: page } = catalogSearchParamsSchema.parse(await searchParams)
 
   const [allDesigns, categories] = await Promise.all([
     getPublishedDesigns({ categorySlug: categoria, search: q }),
-    getCategories(),
+    getPublicCategories(),
   ])
 
   const storage = getStorageProvider()
-  const activeCategories = categories.filter((c) => c.isActive)
+  const activeCategories = categories.map(({ id, name, slug }) => ({ id, name, slug }))
 
   const total = allDesigns.length
   const totalPages = Math.ceil(total / PAGE_SIZE)
   const paginatedDesigns = allDesigns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  const designs = paginatedDesigns.map((d) => ({
-    slug: d.slug,
-    name: d.name,
-    categoryName: d.category.name,
-    categorySlug: d.category.slug,
-    thumbnailUrl: d.images[0]?.thumbnailKey
-      ? storage.getPublicUrl(d.images[0].thumbnailKey)
-      : d.images[0]?.storageKey
-        ? storage.getPublicUrl(d.images[0].storageKey)
-        : null,
-  }))
+  const designs = paginatedDesigns.map((d) => toDesignCardData(d, storage))
 
   // Construir URL de paginación preservando filtros
   function pageHref(p: number) {

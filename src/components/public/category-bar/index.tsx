@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { buildCatalogHref } from "@/lib/catalog-url"
 
 type Category = {
   id: string
@@ -26,11 +27,7 @@ export function CategoryBar({ categories }: Props) {
   const [canNext, setCanNext] = useState(false)
 
   function buildHref(slug: string) {
-    const params = new URLSearchParams()
-    if (slug) params.set("categoria", slug)
-    if (q) params.set("q", q)
-    const qs = params.toString()
-    return `/catalogo${qs ? `?${qs}` : ""}`
+    return buildCatalogHref({ categoria: slug, q })
   }
 
   const updateArrows = useCallback(() => {

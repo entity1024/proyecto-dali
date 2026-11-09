@@ -22,6 +22,25 @@ export function getCategories() {
   })
 }
 
+/**
+ * Categorías para el sitio público: solo activas, con la cantidad de recursos **publicados**.
+ * No reemplaza a `getCategories()`, que usa el panel admin y cuenta todos los estados.
+ */
+export function getPublicCategories() {
+  return prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: { displayOrder: "asc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      _count: { select: { designs: { where: { status: "published" } } } },
+    },
+  })
+}
+
+export type PublicCategory = Awaited<ReturnType<typeof getPublicCategories>>[number]
+
 export function getCategoryById(id: string) {
   return prisma.category.findUnique({ where: { id } })
 }

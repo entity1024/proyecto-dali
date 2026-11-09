@@ -1,13 +1,9 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Badge } from "@/components/ui/badge"
+import { ImageOff } from "lucide-react"
+import type { DesignCardData } from "@/lib/presenters/design-card"
 
-type Props = {
-  slug: string
-  name: string
-  categoryName: string
-  categorySlug: string
-  thumbnailUrl: string | null
+type Props = DesignCardData & {
   animationDelay?: number
 }
 
@@ -15,39 +11,33 @@ export function DesignCard({ slug, name, categoryName, thumbnailUrl, animationDe
   return (
     <Link
       href={`/recurso/${slug}`}
-      className="animate-fade-up group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
+      className="animate-fade-up group flex flex-col gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       style={animationDelay !== undefined ? { animationDelay: `${animationDelay}ms` } : undefined}
     >
-      {/* Thumbnail */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      {/* Vista previa: protagonista de la tarjeta */}
+      <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-muted">
         {thumbnailUrl ? (
           <Image
             src={thumbnailUrl}
             alt={name}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transform-none"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (
-          <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
-            Sin imagen
+          <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <ImageOff className="size-6" aria-hidden="true" />
+            <span className="text-xs">Sin imagen</span>
           </div>
         )}
-
-        {/* Hover overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-primary/80 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-          <span className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-primary">
-            Ver diseño
-          </span>
-        </div>
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1.5 p-3">
-        <p className="line-clamp-2 text-sm font-semibold leading-snug">{name}</p>
-        <Badge variant="secondary" className="w-fit text-xs">
-          {categoryName}
-        </Badge>
+      <div className="flex flex-col gap-0.5 px-0.5">
+        <p className="line-clamp-2 text-sm font-semibold leading-snug underline-offset-2 group-hover:underline sm:text-base">
+          {name}
+        </p>
+        <p className="text-sm text-muted-foreground">{categoryName}</p>
       </div>
     </Link>
   )

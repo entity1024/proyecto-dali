@@ -20,7 +20,7 @@ export function ImageGallery({ images, name }: Props) {
 
   if (images.length === 0) {
     return (
-      <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-muted text-sm text-muted-foreground">
+      <div className="flex aspect-4/3 items-center justify-center rounded-xl bg-muted text-sm text-muted-foreground">
         Sin imágenes de previsualización
       </div>
     )
@@ -29,7 +29,7 @@ export function ImageGallery({ images, name }: Props) {
   return (
     <div className="space-y-3">
       {/* Imagen principal */}
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
+      <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-muted">
         <Image
           src={images[active].url}
           alt={images[active].altText || name}

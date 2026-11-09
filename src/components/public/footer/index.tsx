@@ -1,10 +1,47 @@
 import Link from "next/link"
-import { getCategories } from "@/lib/db/queries/categories"
+import { Suspense } from "react"
+import { cacheLife } from "next/cache"
+import { getPublicCategories } from "@/lib/db/queries/categories"
 
-export async function Footer() {
-  const categories = await getCategories().catch(() => [])
-  const activeCategories = categories.filter((c) => c.isActive).slice(0, 6)
+/**
+ * Lista de categorías del pie. Va en su propio <Suspense> para no bloquear el prerender del layout
+ * público (aviso "Blocking Route" de Cache Components, research R3).
+ * Excepción documentada (research R10): si la consulta falla, la columna no se muestra.
+ */
+async function FooterCategories() {
+  const categories = await getPublicCategories().catch(() => [])
+  const activeCategories = categories.slice(0, 6)
+  if (activeCategories.length === 0) return null
 
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        Categorías
+      </h3>
+      <ul className="space-y-2">
+        {activeCategories.map((cat) => (
+          <li key={cat.id}>
+            <Link
+              href={`/catalogo?categoria=${cat.slug}`}
+              className="text-sm text-muted-foreground transition-colors hover:text-primary"
+            >
+              {cat.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** Año actual cacheado: evita el aviso "blocking-prerender-current-time" de Cache Components. */
+async function CopyrightYear() {
+  "use cache"
+  cacheLife("days")
+  return <>{new Date().getFullYear()}</>
+}
+
+export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/30 mt-auto">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -21,25 +58,9 @@ export async function Footer() {
           </div>
 
           {/* Categorías */}
-          {activeCategories.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Categorías
-              </h3>
-              <ul className="space-y-2">
-                {activeCategories.map((cat) => (
-                  <li key={cat.id}>
-                    <Link
-                      href={`/catalogo?categoria=${cat.slug}`}
-                      className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                    >
-                      {cat.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <Suspense fallback={null}>
+            <FooterCategories />
+          </Suspense>
 
           {/* Links */}
           <div className="space-y-3">
@@ -57,7 +78,7 @@ export async function Footer() {
               </li>
               <li>
                 <Link
-                  href="/"
+                  href="/#novedades"
                   className="text-sm text-muted-foreground transition-colors hover:text-primary"
                 >
                   Novedades
@@ -68,7 +89,7 @@ export async function Footer() {
         </div>
 
         <div className="mt-8 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Plantillarte. Todos los derechos reservados.
+          © <CopyrightYear /> Plantillarte. Todos los derechos reservados.
         </div>
       </div>
     </footer>

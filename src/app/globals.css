@@ -182,3 +182,11 @@
     }
   }
 }
+
+/* Oculta la barra de scroll en carruseles horizontales (categorías), manteniendo el scroll */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

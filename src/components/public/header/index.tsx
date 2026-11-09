@@ -2,15 +2,23 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useState, useRef, useEffect, Suspense } from "react"
+import { useState, useRef, useEffect, useCallback, Suspense } from "react"
 import { Search, X, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { buildCatalogHref } from "@/lib/catalog-url"
+
+const NAV_LINKS = [
+  { href: "/", label: "Inicio", isActive: (p: string) => p === "/" },
+  { href: "/catalogo", label: "Catálogo", isActive: (p: string) => p.startsWith("/catalogo") },
+]
+
+const iconButtonClass =
+  "flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:size-9"
 
 function SearchBox() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
-  const [focused, setFocused] = useState(false)
   const [value, setValue] = useState(searchParams.get("q") ?? "")
   const inputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -29,7 +37,6 @@ function SearchBox() {
     function onClickOutside(e: MouseEvent) {
       if (formRef.current && !formRef.current.contains(e.target as Node)) {
         setOpen(false)
-        setFocused(false)
       }
     }
     document.addEventListener("mousedown", onClickOutside)
@@ -38,64 +45,67 @@ function SearchBox() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const q = value.trim()
-    router.push(q ? `/catalogo?q=${encodeURIComponent(q)}` : "/catalogo")
+    router.push(buildCatalogHref({ q: value }))
     setOpen(false)
-    setFocused(false)
   }
 
   return (
     <div className="relative flex items-center">
-      {/* Botón lupa — siempre visible, desaparece cuando el input está abierto */}
+      {/* Botón lupa — visible mientras el input está cerrado */}
       <button
+        type="button"
         onClick={() => setOpen(true)}
         aria-label="Buscar"
-        className={cn(
-          "rounded-full p-1.5 text-muted-foreground transition-all duration-200 hover:text-primary",
-          open ? "pointer-events-none opacity-0 scale-75" : "opacity-100 scale-100"
-        )}
-        style={{ position: open ? "absolute" : "relative" }}
+        aria-expanded={open}
+        className={cn(iconButtonClass, open && "pointer-events-none absolute opacity-0")}
       >
-        <Search className="size-5" />
+        <Search className="size-5" aria-hidden="true" />
       </button>
 
-      {/* Input animado */}
+      {/* Input expandible */}
       <form
         ref={formRef}
+        role="search"
         onSubmit={handleSubmit}
         className={cn(
-          "flex items-center overflow-hidden rounded-full border bg-background transition-all duration-300 ease-out",
-          open ? "w-56 opacity-100 sm:w-72" : "w-0 opacity-0 border-transparent",
-          focused ? "border-primary shadow-[0_0_0_3px_oklch(0.55_0.22_250_/_0.15)]" : "border-border"
+          "flex items-center overflow-hidden rounded-full border bg-background transition-all duration-300 ease-out focus-within:border-primary focus-within:ring-3 focus-within:ring-ring/30",
+          open ? "w-56 border-border opacity-100 sm:w-72" : "w-0 border-transparent opacity-0"
         )}
-        style={{ transformOrigin: "right center" }}
+        aria-hidden={!open}
       >
-        <Search className="ml-3 size-4 shrink-0 text-muted-foreground" />
+        <Search className="ml-3 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <input
           ref={inputRef}
+          type="text"
+          enterKeyHint="search"
+          autoComplete="off"
+          aria-label="Buscar recursos"
+          tabIndex={open ? 0 : -1}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
           placeholder="Buscar recursos..."
-          className="h-9 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"
+          className="h-10 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"
         />
         {value && (
           <button
             type="button"
+            tabIndex={open ? 0 : -1}
             onClick={() => { setValue(""); inputRef.current?.focus() }}
-            className="mr-1 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Limpiar búsqueda"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
           >
-            <X className="size-3.5" />
+            <X className="size-3.5" aria-hidden="true" />
           </button>
         )}
         <button
           type="button"
-          onClick={() => { setOpen(false); setFocused(false) }}
-          className="mr-2 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
+          tabIndex={open ? 0 : -1}
+          onClick={() => setOpen(false)}
           aria-label="Cerrar búsqueda"
+          className="mr-1 flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
         >
-          <X className="size-4" />
+          <X className="size-4" aria-hidden="true" />
         </button>
       </form>
     </div>
@@ -105,89 +115,119 @@ function SearchBox() {
 function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname()
 
+  useEffect(() => {
+    if (!open) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [open, onClose])
+
   if (!open) return null
 
   return (
-    <div className="border-t border-border bg-background px-4 py-4 sm:hidden">
-      <nav className="flex flex-col gap-3">
-        <Link
-          href="/"
-          onClick={onClose}
-          className={cn(
-            "text-sm font-medium transition-colors hover:text-primary",
-            pathname === "/" ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          Inicio
-        </Link>
-        <Link
-          href="/catalogo"
-          onClick={onClose}
-          className={cn(
-            "text-sm font-medium transition-colors hover:text-primary",
-            pathname.startsWith("/catalogo") ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          Catálogo
-        </Link>
+    <div id="mobile-menu" className="border-t border-border bg-background px-4 py-2 sm:hidden">
+      <nav aria-label="Principal" className="flex flex-col">
+        {NAV_LINKS.map(({ href, label, isActive }) => {
+          const active = isActive(pathname)
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={onClose}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex min-h-11 items-center rounded-lg px-2 text-base font-medium transition-colors hover:bg-muted",
+                active ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              {label}
+            </Link>
+          )
+        })}
       </nav>
     </div>
   )
 }
 
+/**
+ * Navegación de escritorio. Lee `usePathname()` para marcar la página actual, así que se renderiza
+ * dentro de <Suspense> (en rutas dinámicas el pathname solo existe en runtime, research R3).
+ * `pathname` en null = fallback del prerender: mismos enlaces, sin marca de activo (sin CLS).
+ */
+function DesktopNavLinks({ pathname }: { pathname: string | null }) {
+  return (
+    <>
+      {NAV_LINKS.map(({ href, label, isActive }) => {
+        const active = pathname !== null && isActive(pathname)
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+              active ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            {label}
+          </Link>
+        )
+      })}
+    </>
+  )
+}
+
+function DesktopNav() {
+  return <DesktopNavLinks pathname={usePathname()} />
+}
+
 export function Header() {
-  const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const closeMenu = useCallback(() => setMobileOpen(false), [])
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <span className="text-lg font-bold tracking-tight text-primary">Plantillarte</span>
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
+        {/* Marca */}
+        <Link
+          href="/"
+          className="flex min-h-11 shrink-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <span className="text-xl font-bold tracking-tight text-primary">Plantillarte</span>
         </Link>
 
-        {/* Nav desktop */}
-        <nav className="hidden sm:flex items-center gap-6 ml-4">
-          <Link
-            href="/"
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              pathname === "/" ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            Inicio
-          </Link>
-          <Link
-            href="/catalogo"
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              pathname.startsWith("/catalogo") ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            Catálogo
-          </Link>
+        {/* Navegación escritorio */}
+        <nav aria-label="Principal" className="ml-6 hidden items-center gap-1 sm:flex">
+          <Suspense fallback={<DesktopNavLinks pathname={null} />}>
+            <DesktopNav />
+          </Suspense>
         </nav>
 
         <div className="flex-1" />
 
-        {/* Search */}
-        <Suspense fallback={<div className="size-8" />}>
+        {/* Búsqueda */}
+        <Suspense fallback={<div className="size-11 md:size-9" />}>
           <SearchBox />
         </Suspense>
 
-        {/* Mobile menu button */}
+        {/* Menú móvil */}
         <button
-          className="sm:hidden rounded p-1.5 text-muted-foreground hover:text-foreground"
+          type="button"
+          className={cn(iconButtonClass, "sm:hidden")}
           onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Menú"
+          aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-menu"
         >
-          <Menu className="size-5" />
+          {mobileOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
         </button>
       </div>
 
-      {/* Mobile nav */}
-      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <Suspense fallback={null}>
+        <MobileMenu open={mobileOpen} onClose={closeMenu} />
+      </Suspense>
     </header>
   )
 }

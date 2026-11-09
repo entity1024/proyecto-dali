@@ -1,15 +1,12 @@
 import { DesignCard } from "@/components/public/design-card"
+import type { DesignCardData } from "@/lib/presenters/design-card"
 
-type Design = {
-  slug: string
-  name: string
-  categoryName: string
-  categorySlug: string
-  thumbnailUrl: string | null
-}
+/** Grilla compartida con su skeleton (RecentDesignsSkeleton). */
+export const designGridClass =
+  "grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-4"
 
 interface Props {
-  designs: Design[]
+  designs: DesignCardData[]
   emptyMessage?: string
   stagger?: boolean
 }
@@ -24,7 +21,7 @@ export function DesignGrid({ designs, emptyMessage = "No hay recursos disponible
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className={designGridClass}>
       {designs.map((d, i) => (
         <DesignCard
           key={d.slug}

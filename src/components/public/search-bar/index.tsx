@@ -1,50 +1,50 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Search, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { buildCatalogHref } from "@/lib/catalog-url"
 
 export function SearchBar() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [value, setValue] = useState(searchParams.get("q") ?? "")
+  const currentQ = searchParams.get("q") ?? ""
+  const [value, setValue] = useState(currentQ)
+  const [syncedQ, setSyncedQ] = useState(currentQ)
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    setValue(searchParams.get("q") ?? "")
-  }, [searchParams])
+  // Sincroniza el input cuando cambia `q` en la URL (navegación), sin efecto
+  if (currentQ !== syncedQ) {
+    setSyncedQ(currentQ)
+    setValue(currentQ)
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const params = new URLSearchParams(searchParams.toString())
-    const q = value.trim()
-    if (q) { params.set("q", q) } else { params.delete("q") }
-    params.delete("pagina")
-    router.push(`/catalogo?${params.toString()}`)
+    router.push(buildCatalogHref({ q: value, base: searchParams }))
   }
 
   function handleClear() {
     setValue("")
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete("q")
-    params.delete("pagina")
-    router.push(`/catalogo?${params.toString()}`)
+    router.push(buildCatalogHref({ q: "", base: searchParams }))
     inputRef.current?.focus()
   }
 
   return (
     <form
+      role="search"
       onSubmit={handleSubmit}
       className={cn(
         "relative flex w-full items-center rounded-xl border bg-background transition-all duration-200",
         focused
-          ? "border-primary shadow-[0_0_0_3px_oklch(0.55_0.22_250_/_0.15)]"
+          ? "border-primary ring-3 ring-ring/30"
           : "border-border hover:border-primary/40"
       )}
     >
       <Search
+        aria-hidden="true"
         className={cn(
           "ml-3 size-4 shrink-0 transition-colors duration-200",
           focused ? "text-primary" : "text-muted-foreground"
@@ -52,6 +52,10 @@ export function SearchBar() {
       />
       <input
         ref={inputRef}
+        type="text"
+        enterKeyHint="search"
+        autoComplete="off"
+        aria-label="Buscar recursos"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onFocus={() => setFocused(true)}
@@ -63,9 +67,10 @@ export function SearchBar() {
         <button
           type="button"
           onClick={handleClear}
-          className="mr-2 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
+          aria-label="Limpiar búsqueda"
+          className="mr-1 flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
         >
-          <X className="size-3.5" />
+          <X className="size-3.5" aria-hidden="true" />
         </button>
       )}
       <button

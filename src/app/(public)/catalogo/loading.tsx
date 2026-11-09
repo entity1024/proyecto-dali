@@ -1,3 +1,5 @@
+import { designGridClass } from "@/components/public/design-grid"
+
 export default function CatalogoLoading() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
@@ -15,14 +17,13 @@ export default function CatalogoLoading() {
       </div>
 
       {/* Grid skeleton */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {/* Misma grilla y forma que DesignGrid/DesignCard para evitar CLS */}
+      <div className={designGridClass}>
         {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
-            <div className="aspect-[4/3] animate-pulse bg-muted" />
-            <div className="space-y-2 p-3">
-              <div className="h-4 animate-pulse rounded bg-muted" />
-              <div className="h-5 w-20 animate-pulse rounded-full bg-muted" />
-            </div>
+          <div key={i} className="flex flex-col gap-2">
+            <div className="aspect-4/3 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
+            <div className="h-4 w-3/4 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-muted motion-reduce:animate-none" />
           </div>
         ))}
       </div>
