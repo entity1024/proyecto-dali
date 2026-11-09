@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String        @map("password_hash")
+  name         String?
+  role         UserRole      @default(admin)
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  downloadLogs DownloadLog[]
+
+  @@map("users")
+}
+
+model Category {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  coverImageKey String?  @map("cover_image_key")
+  displayOrder  Int      @default(0) @map("display_order")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  designs       Design[]
+
+  @@map("categories")
+}
+
+model Design {
+  id            String        @id @default(uuid())
+  name          String
+  slug          String        @unique
+  description   String?
+  categoryId    String        @map("category_id")
+  status        DesignStatus  @default(draft)
+  downloadCount Int           @default(0) @map("download_count")
+  tags          String[]      @default([])
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  publishedAt   DateTime?     @map("published_at")
+  files         DesignFile[]
+  images        DesignImage[]
+  category      Category      @relation(fields: [categoryId], references: [id])
+  downloadLogs  DownloadLog[]
+
+  @@index([categoryId, status])
+  @@index([status])
+  @@map("designs")
+}
+
+model DesignImage {
+  id           String   @id @default(uuid())
+  designId     String   @map("design_id")
+  storageKey   String   @map("storage_key")
+  thumbnailKey String?  @map("thumbnail_key")
+  altText      String?  @map("alt_text")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  displayOrder Int      @default(0) @map("display_order")
+  width        Int?
+  height       Int?
+  createdAt    DateTime @default(now()) @map("created_at")
+  design       Design   @relation(fields: [designId], references: [id], onDelete: Cascade)
+
+  @@index([designId])
+  @@map("design_images")
+}
+
+model DesignFile {
+  id               String        @id @default(uuid())
+  designId         String        @map("design_id")
+  storageKey       String        @map("storage_key")
+  originalFilename String        @map("original_filename")
+  displayName      String?       @map("display_name")
+  fileFormat       String?       @map("file_format")
+  mimeType         String?       @map("mime_type")
+  fileSizeBytes    BigInt?       @map("file_size_bytes")
+  isActive         Boolean       @default(true) @map("is_active")
+  displayOrder     Int           @default(0) @map("display_order")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  design           Design        @relation(fields: [designId], references: [id], onDelete: Cascade)
+  downloadLogs     DownloadLog[]
+
+  @@index([designId])
+  @@map("design_files")
+}
+
+model DownloadLog {
+  id           String     @id @default(uuid())
+  designId     String     @map("design_id")
+  fileId       String     @map("file_id")
+  userId       String?    @map("user_id")
+  ipHash       String?    @map("ip_hash")
+  downloadedAt DateTime   @default(now()) @map("downloaded_at")
+  design       Design     @relation(fields: [designId], references: [id])
+  file         DesignFile @relation(fields: [fileId], references: [id])
+  user         User?      @relation(fields: [userId], references: [id])
+
+  @@index([designId])
+  @@index([downloadedAt])
+  @@map("download_logs")
+}
+
+enum UserRole {
+  admin
+  user
+}
+
+enum DesignStatus {
+  draft
+  published
+  archived
+}
