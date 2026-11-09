@@ -3,7 +3,6 @@ import { Suspense } from "react"
 import { Hero } from "@/components/public/hero"
 import { CategorySection } from "@/components/public/category-section"
 import { RecentDesigns } from "@/components/public/recent-designs"
-import { ValueProps } from "@/components/public/value-props"
 import SectionError from "@/components/public/section-error"
 import {
   CategorySectionSkeleton,
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
   title: "Plantillarte — Recursos Gráficos Digitales",
 }
 
-// Orden de secciones: FR-001. Cada sección con datos tiene carga, vacío y error propios (research R3, R10).
+// Orden de secciones: 002 FR-001 (hero → categorías → novedades). Cada sección con datos tiene carga, vacío y error propios.
 export default function HomePage() {
   return (
     <>
@@ -31,8 +30,6 @@ export default function HomePage() {
           <RecentDesigns />
         </Suspense>
       </SectionError>
-
-      <ValueProps />
     </>
   )
 }

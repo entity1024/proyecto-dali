@@ -8,7 +8,7 @@ const pulse = "animate-pulse rounded-md bg-muted motion-reduce:animate-none"
 function SectionHeaderSkeleton() {
   return (
     <div className="mb-6 space-y-2 sm:mb-8">
-      <div className={`${pulse} h-8 w-40`} />
+      <div className={`${pulse} h-7 w-40 sm:h-8`} />
       <div className={`${pulse} h-4 w-56`} />
     </div>
   )
@@ -49,7 +49,7 @@ export function CategorySectionSkeleton() {
 
 export function RecentDesignsSkeleton() {
   return (
-    <section className="bg-muted/30 py-12 sm:py-16" aria-hidden="true">
+    <section className="bg-muted/30 pt-4 pb-10 sm:pb-12" aria-hidden="true">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeaderSkeleton />
         <div className={designGridClass}>
