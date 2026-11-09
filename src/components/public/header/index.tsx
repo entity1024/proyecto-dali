@@ -16,6 +16,7 @@ const iconButtonClass =
   "flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:size-9"
 
 function SearchBox() {
+  const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -48,6 +49,9 @@ function SearchBox() {
     router.push(buildCatalogHref({ q: value }))
     setOpen(false)
   }
+
+  // En la portada el buscador es el del hero (FR-004). "/" es estática: el pathname se resuelve en el prerender, sin CLS (research R1).
+  if (pathname === "/") return null
 
   return (
     <div className="relative flex items-center">
